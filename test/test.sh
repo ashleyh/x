@@ -10,10 +10,26 @@ assert() {
   fi
 }
 
+if ! type realpath &>/dev/null ; then
+  echo "Missing realpath..."
+  exit 1
+fi
+
 script=$(realpath "$0")
+
+if [[ ! "$0" -ef "$script" ]] ; then
+  echo "Sanity check failed"
+  exit 1
+fi
+
 home=$(dirname "$script")
 x=$home/../x
-tmp=$(mktemp -d)
+tmp=$(mktemp -d -t test)
+
+if [[ ! -d "$tmp" ]] ; then
+  echo "Failed to create temporary directory"
+  exit 1
+fi
 
 echo "Working in $tmp"
 cd "$tmp"
