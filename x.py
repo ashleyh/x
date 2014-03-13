@@ -2,8 +2,8 @@
 
 import sys
 
-def main():
-    sys.exit(1)
+def main(argv):
+    return 1
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main(sys.argv))
