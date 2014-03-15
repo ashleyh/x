@@ -23,8 +23,30 @@ def test_untars_rooted(tmpdir):
     assert paths(tmpdir) == set(['rooted.tar', 'root', 'root/a', 'root/b'])
 
 
+def test_untars_rooted_with_conflict(tmpdir):
+    tmpdir.chdir()
+    tmpdir.mkdir('root')
+    tmpdir.join('root', 'foo').write('bar')
+    test_dir.join('rooted.tar').copy(tmpdir.join('rooted.tar'))
+    assert main(['rooted.tar']) == 0
+    assert paths(tmpdir) == set([
+        'rooted.tar', 'root', 'root/foo', 'root-1', 'root-1/a', 'root-1/b'])
+
+
 def test_untars_unrooted(tmpdir):
     tmpdir.chdir()
     test_dir.join('unrooted.tar').copy(tmpdir.join('unrooted.tar'))
     assert main(['unrooted.tar']) == 0
-    assert paths(tmpdir) == set(['unrooted.tar', 'unrooted', 'unrooted/a', 'unrooted/b'])
+    assert paths(tmpdir) == set([
+        'unrooted.tar', 'unrooted', 'unrooted/a', 'unrooted/b'])
+
+
+def test_untars_unrooted_conflict(tmpdir):
+    tmpdir.chdir()
+    tmpdir.mkdir('unrooted')
+    tmpdir.join('unrooted', 'foo').write('bar')
+    test_dir.join('unrooted.tar').copy(tmpdir.join('unrooted.tar'))
+    assert main(['unrooted.tar']) == 0
+    assert paths(tmpdir) == set([
+        'unrooted.tar', 'unrooted', 'unrooted/foo',
+        'unrooted-1', 'unrooted-1/a', 'unrooted-1/b'])

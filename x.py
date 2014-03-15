@@ -7,6 +7,7 @@ import subprocess
 import os
 import argparse
 import tempfile
+import errno
 
 
 def tar(path, work_dir):
@@ -33,6 +34,24 @@ def get_only_child(path):
         return None
 
 
+def rename(src, dest):
+    n = 0
+    while True:
+        try:
+            dest_ = dest if n == 0 else '{}-{}'.format(dest, n)
+            os.rename(src, dest_)
+        except OSError as e:
+            if e.errno == errno.ENOTEMPTY:
+                n += 1
+                continue
+            else:
+                raise e
+        except e:
+            raise e
+        else:
+            break
+
+
 def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument('path')
@@ -47,9 +66,9 @@ def main(argv):
     cmd(path=args.path, work_dir=work_dir)
     only_child = get_only_child(work_dir)
     if only_child is None:
-        os.rename(work_dir, expanded_path)
+        rename(work_dir, expanded_path)
     else:
-        os.rename(
+        rename(
             os.path.join(work_dir, only_child),
             os.path.join(dirname, only_child)
         )
