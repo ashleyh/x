@@ -50,3 +50,10 @@ def test_untars_unrooted_conflict(tmpdir):
     assert paths(tmpdir) == set([
         'unrooted.tar', 'unrooted', 'unrooted/foo',
         'unrooted-1', 'unrooted-1/a', 'unrooted-1/b'])
+
+
+def test_untars_bz2(tmpdir):
+    tmpdir.chdir()
+    test_dir.join('rooted.tar.bz2').copy(tmpdir.join('rooted.tar.bz2'))
+    assert main(['rooted.tar.bz2']) == 0
+    assert paths(tmpdir) == set(['rooted.tar.bz2', 'root', 'root/a', 'root/b'])
