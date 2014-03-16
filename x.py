@@ -14,10 +14,15 @@ def tar(path, work_dir):
     subprocess.call(['tar', '-x', '-C', work_dir, '-f', path])
 
 
+def tar_bz2(path, work_dir):
+    subprocess.call(['tar', '-x', '-j', '-C', work_dir, '-f', path])
+
+
 # XXX terrible name
 def guess_info(path):
     formats = [
         ('tar', tar),
+        ('tar.bz2', tar_bz2),
     ]
     for ext, cmd in formats:
         dot_ext = '.' + ext
