@@ -51,3 +51,8 @@ def test_untars_unrooted_conflict(tmpdir):
 def test_untars_bz2(tmpdir):
     extract_test(tmpdir, 'rooted.tar.bz2',
                  ['root', 'root/a', 'root/b'])
+
+
+def test_untars_gz(tmpdir):
+    extract_test(tmpdir, 'rooted.tar.gz',
+                 ['root', 'root/a', 'root/b'])
