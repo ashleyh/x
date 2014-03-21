@@ -8,6 +8,7 @@ import os
 import argparse
 import tempfile
 import errno
+import collections
 
 
 def tar(path, work_dir):
@@ -22,6 +23,9 @@ def tar_gz(path, work_dir):
     subprocess.call(['tar', '-x', '-z', '-C', work_dir, '-f', path])
 
 
+Info = collections.namedtuple('Info', 'extractor basename')
+
+
 # XXX terrible name
 def guess_info(path):
     formats = [
@@ -32,7 +36,10 @@ def guess_info(path):
     for ext, cmd in formats:
         dot_ext = '.' + ext
         if path.endswith(dot_ext):
-            return path[:-len(dot_ext)], cmd
+            return Info(
+                extractor=cmd,
+                basename=os.path.basename(path)[:-len(dot_ext)],
+            )
     return None
 
 
@@ -62,28 +69,31 @@ def rename(src, dest):
             break
 
 
-def main(argv):
-    parser = argparse.ArgumentParser()
-    parser.add_argument('path')
-    args = parser.parse_args(argv)
-    dirname, basename = os.path.split(args.path)
+def act(args):
     info = guess_info(args.path)
     if info is None:
         print("Couldn't guess type of", args.path, file=sys.stderr)
         return 1
-    expanded_path, cmd = info
-    work_dir = tempfile.mkdtemp(prefix=basename, dir=dirname)
-    cmd(path=args.path, work_dir=work_dir)
+    target_dir = os.path.dirname(args.path)
+    work_dir = tempfile.mkdtemp(prefix=info.basename, dir=target_dir)
+    info.extractor(path=args.path, work_dir=work_dir)
     only_child = get_only_child(work_dir)
     if only_child is None:
-        rename(work_dir, expanded_path)
+        rename(work_dir, os.path.join(target_dir, info.basename))
     else:
         rename(
             os.path.join(work_dir, only_child),
-            os.path.join(dirname, only_child)
+            os.path.join(target_dir, only_child)
         )
         os.rmdir(work_dir)
     return 0
+
+
+def main(argv):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('path')
+    args = parser.parse_args(argv)
+    return act(args)
 
 
 if __name__ == '__main__':
