@@ -9,6 +9,8 @@ import argparse
 import tempfile
 import errno
 import collections
+import requests
+import re
 
 
 def tar(path, work_dir):
@@ -69,14 +71,41 @@ def rename(src, dest):
             break
 
 
+def is_url(path):
+    return path.startswith('http://') or path.startswith('https://')
+
+
+def longest_extension(url):
+    m = re.search(r'\.[^/]+$', url)
+    if m:
+        return m.group(0)
+    else:
+        return ''
+
+
+def download(url):
+    f = tempfile.NamedTemporaryFile(suffix=longest_extension(url), delete=False)
+    r = requests.get(url)
+    r.raise_for_status()
+    for block in r.iter_content(chunk_size=1024):
+        f.write(block)
+    f.close()
+    return f.name
+
+
 def act(args):
-    info = guess_info(args.path)
+    if is_url(args.path):
+        path = download(args.path)
+        target_dir = '.'
+    else:
+        path = args.path
+        target_dir = os.path.dirname(path)
+    info = guess_info(path)
     if info is None:
-        print("Couldn't guess type of", args.path, file=sys.stderr)
+        print("Couldn't guess type of", path, file=sys.stderr)
         return 1
-    target_dir = os.path.dirname(args.path)
     work_dir = tempfile.mkdtemp(prefix=info.basename, dir=target_dir)
-    info.extractor(path=args.path, work_dir=work_dir)
+    info.extractor(path=path, work_dir=work_dir)
     only_child = get_only_child(work_dir)
     if only_child is None:
         rename(work_dir, os.path.join(target_dir, info.basename))
