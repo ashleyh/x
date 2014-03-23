@@ -11,6 +11,7 @@ import errno
 import collections
 import requests
 import re
+from autowire import autowire
 
 
 def tar(path, work_dir):
@@ -93,29 +94,67 @@ def download(url):
     return f.name
 
 
-def act(args):
-    if is_url(args.path):
-        path = download(args.path)
+def maybe_download(path_or_url):
+    if is_url(path_or_url):
+        path = download(path_or_url)
         target_dir = '.'
     else:
-        path = args.path
+        path = path_or_url
         target_dir = os.path.dirname(path)
+    return {
+        'path': path,
+        'target_dir': target_dir,
+    }
+
+
+class CouldntGuess(Exception): pass
+
+
+def find_extractor(path):
     info = guess_info(path)
     if info is None:
-        print("Couldn't guess type of", path, file=sys.stderr)
-        return 1
-    work_dir = tempfile.mkdtemp(prefix=info.basename, dir=target_dir)
-    info.extractor(path=path, work_dir=work_dir)
+        raise CouldntGuess()
+    return {
+        'extractor': info.extractor,
+        'basename': info.basename,
+    }
+
+
+def make_work_dir(target_dir):
+    work_dir = tempfile.mkdtemp(dir=target_dir)
+    return {'work_dir': work_dir}
+
+
+def run_extractor(extractor, path, work_dir):
+    extractor(path=path, work_dir=work_dir)
+    return {}
+
+
+def squash_dirs(work_dir, basename, target_dir):
     only_child = get_only_child(work_dir)
     if only_child is None:
-        rename(work_dir, os.path.join(target_dir, info.basename))
+        rename(work_dir, os.path.join(target_dir, basename))
     else:
         rename(
             os.path.join(work_dir, only_child),
             os.path.join(target_dir, only_child)
         )
         os.rmdir(work_dir)
-    return 0
+    return {}
+
+
+def act(args):
+    state = {
+        'path_or_url': args.path,
+    }
+    bits = [maybe_download, find_extractor, make_work_dir, run_extractor, squash_dirs]
+    try:
+        autowire(state, bits)
+    except CouldntGuess:
+        print("Couldn't guess type")
+        return 1
+    else:
+        return 0
 
 
 def main(argv):
