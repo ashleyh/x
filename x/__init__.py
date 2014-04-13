@@ -164,5 +164,5 @@ def main(argv):
     return act(args)
 
 
-if __name__ == '__main__':
+def entry_point():
     sys.exit(main(sys.argv[1:]))
