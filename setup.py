@@ -7,4 +7,7 @@ setup(
     entry_points={
         'console_scripts': ['x = x:entry_point'],
     },
+    install_requires=[
+        'requests==2.2.1',
+    ],
 )
