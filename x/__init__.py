@@ -11,7 +11,7 @@ import errno
 import collections
 import requests
 import re
-from autowire import autowire
+from .autowire import autowire
 
 
 def tar(path, work_dir):
